@@ -21,7 +21,7 @@ Version: 0.0.1
 Author: Julio Ureña (PlainText)
 Twitter: @juliourena
 
-SharpNoPSExec.exe --target=192.168.56.128 --payload=""powershell -exec bypass -nop -e ZQBjAGgAbwAgAEcAbwBkACAAQgBsAGUAcwBzACAAWQBvAHUAIQA=""
+SharpNoPSExec.exe --target=192.168.56.128 --payload=""c:\windows\system32\cmd.exe /c powershell -exec bypass -nop -e ZQBjAGgAbwAgAEcAbwBkACAAQgBsAGUAcwBzACAAWQBvAHUAIQA=""
 
 Required Arguments:
 --target=       - IP or machine name to attack.
