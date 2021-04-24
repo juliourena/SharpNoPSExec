@@ -217,7 +217,7 @@ Twitter: @juliourena
         public static void PrintHelp()
         {
             Console.WriteLine(@"Usage: 
-SharpNoPSExec.exe --target=192.168.56.128 --payload=""powershell -exec bypass -nop -e ZQBjAGgAbwAgAEcAbwBkACAAQgBsAGUAcwBzACAAWQBvAHUAIQA=""
+SharpNoPSExec.exe --target=192.168.56.128 --payload=""c:\windows\system32\cmd.exe /c powershell -exec bypass -nop -e ZQBjAGgAbwAgAEcAbwBkACAAQgBsAGUAcwBzACAAWQBvAHUAIQA=""
 
 Required Arguments:
 --target=       - IP or machine name to attack.
