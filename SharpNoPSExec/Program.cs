@@ -192,7 +192,9 @@ namespace SharpNoPSExec
             }
             catch (Exception)
             {
-                //Console.WriteLine($"[!] Error trying to open the service {ServiceName}");
+                string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
+                Console.WriteLine("\n[!] GetServiceInfo failed. Error: {0}", errorMessage);
+                Environment.Exit(0);
             }
 
             return serviceInfo;
@@ -245,32 +247,34 @@ Note: If the selected service has a non-system account this will be ignored.
             {
                 if (arg.StartsWith("--target="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--target=" }, StringSplitOptions.None);
                     options.target = components[1];
                 }
                 else if (arg.StartsWith("--payload="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--payload=" },StringSplitOptions.None);
+
                     options.payload = components[1];
+
                 }
                 else if (arg.StartsWith("--username="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--username=" }, StringSplitOptions.None);
                     options.username = components[1];
                 }
                 else if (arg.StartsWith("--password="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--password=" }, StringSplitOptions.None);
                     options.password = components[1];
                 }
                 else if (arg.StartsWith("--domain="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--domain=" }, StringSplitOptions.None);
                     options.domain = components[1];
                 }
                 else if (arg.StartsWith("--service="))
                 {
-                    string[] components = arg.Split('=');
+                    string[] components = arg.Split(new string[] { "--service=" }, StringSplitOptions.None);
                     options.service = components[1];
                 }
                 else if (arg.StartsWith("--help"))
@@ -303,14 +307,16 @@ Note: If the selected service has a non-system account this will be ignored.
 
                 if (!result)
                 {
-                    Console.WriteLine("[!] LogonUser failed. Error: {0}", Marshal.GetLastWin32Error());
+                    string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
+                    Console.WriteLine("[!] LogonUser failed. Error: {0}", errorMessage);
                     Environment.Exit(0);
                 }
 
                 result = ImpersonateLoggedOnUser(phToken);
                 if (!result)
                 {
-                    Console.WriteLine("[!] ImpersonateLoggedOnUser failed. Error:{0}", Marshal.GetLastWin32Error());
+                    string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
+                    Console.WriteLine("[!] ImpersonateLoggedOnUser failed. Error:{0}", errorMessage);
                     Environment.Exit(0);
                 }
             }
@@ -340,11 +346,12 @@ Note: If the selected service has a non-system account this will be ignored.
                 Console.WriteLine($"\n[>] Getting services information from {target}.");
                 ServiceController[] services = ServiceController.GetServices(target);
 
-                Console.WriteLine($"\n[>] Looking for a random service to execute our payload.");
                 ServiceInfo serviceInfo = new ServiceInfo();
 
                 if (options.service == "")
                 {
+                    Console.WriteLine($"\n[>] Looking for a random service to execute our payload.");
+
                     Random r = new Random();
                     for (int i = 0; i < services.Length; i++)
                     {
@@ -357,7 +364,7 @@ Note: If the selected service has a non-system account this will be ignored.
 
                             if (serviceInfo.startName.ToLower() == "localsystem")
                             {
-                                Console.WriteLine($"\n[>] Service found {services[value].ServiceName}.");
+                                Console.WriteLine($"    |->Service found {services[value].ServiceName}.");
                                 break;
                             }
                         }
@@ -378,7 +385,7 @@ Note: If the selected service has a non-system account this will be ignored.
 
                                 if (serviceInfo.startName.ToLower() == "localsystem")
                                 {
-                                    Console.WriteLine($"\n[>] Service found {services[value].ServiceName}.");
+                                    Console.WriteLine($"    |->Service found {services[value].ServiceName}.");
                                     break;
                                 }
                             }
@@ -392,14 +399,32 @@ Note: If the selected service has a non-system account this will be ignored.
                 }
                 else
                 {
-                    serviceInfo = GetServiceInfo(options.service, SCMHandle);
-                    if (serviceInfo.startName.ToLower() == "localsystem")
+                    Console.WriteLine($"\n[>] Checking if service {options.service} exists.");
+
+                    bool found = false;
+                    // Check if --server=value exits. 
+                    foreach (var service in services)
                     {
-                        Console.WriteLine($"\n[>] Service found {options.service}.");
+                        if (service.ServiceName == options.service)
+                            found = true;
+                    }
+
+                    if (found)
+                    { 
+                        serviceInfo = GetServiceInfo(options.service, SCMHandle);
+                        if (serviceInfo.startName.ToLower() == "localsystem")
+                        {
+                            Console.WriteLine($"    |->Service found {options.service}.");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"\n[!] The service {options.service} is authenticated {serviceInfo.displayName} aborting to not lose the account.");
+                            Environment.Exit(0);
+                        }
                     }
                     else
                     {
-                        Console.WriteLine($"\n[!] The service {options.service} is authenticated {serviceInfo.displayName} aborting to not lose the account.");
+                        Console.WriteLine($"    |->Service not found {options.service}.");
                         Environment.Exit(0);
                     }
                 }
