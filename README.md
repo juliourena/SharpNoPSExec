@@ -42,3 +42,6 @@ Note: If the selected service has a non-system account this will be ignored.
 #### Version 0.0.2
 - Fixed - Parsing payload, powershell commands wont execute if they have =.
 - Changed - Error handling.
+
+#### Version 0.0.1
+- First release.
