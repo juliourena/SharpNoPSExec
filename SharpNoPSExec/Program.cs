@@ -142,6 +142,7 @@ namespace SharpNoPSExec
 
         public static ServiceInfo GetServiceInfo(string ServiceName, IntPtr SCMHandle)
         {
+            Console.WriteLine($"    |-> Querying service {ServiceName}");
             ServiceInfo serviceInfo = new ServiceInfo();
 
             try
@@ -364,7 +365,7 @@ Note: If the selected service has a non-system account this will be ignored.
 
                             if (serviceInfo.startName.ToLower() == "localsystem")
                             {
-                                Console.WriteLine($"    |->Service found {services[value].ServiceName}.");
+                                Console.WriteLine($"    |-> Service {services[value].ServiceName} authenticated as {serviceInfo.startName}.");
                                 break;
                             }
                         }
@@ -385,7 +386,7 @@ Note: If the selected service has a non-system account this will be ignored.
 
                                 if (serviceInfo.startName.ToLower() == "localsystem")
                                 {
-                                    Console.WriteLine($"    |->Service found {services[value].ServiceName}.");
+                                    Console.WriteLine($"    |-> Service {services[value].ServiceName} authenticated as {serviceInfo.startName}.");
                                     break;
                                 }
                             }
@@ -414,7 +415,7 @@ Note: If the selected service has a non-system account this will be ignored.
                         serviceInfo = GetServiceInfo(options.service, SCMHandle);
                         if (serviceInfo.startName.ToLower() == "localsystem")
                         {
-                            Console.WriteLine($"    |->Service found {options.service}.");
+                            Console.WriteLine($"    |-> Service {options.service} authenticated as {serviceInfo.startName}.");
                         }
                         else
                         {
@@ -424,7 +425,7 @@ Note: If the selected service has a non-system account this will be ignored.
                     }
                     else
                     {
-                        Console.WriteLine($"    |->Service not found {options.service}.");
+                        Console.WriteLine($"    |-> Service not found {options.service}.");
                         Environment.Exit(0);
                     }
                 }
