@@ -17,7 +17,7 @@ This tool is inspired on PSExec explanation from #OSEP for lateralmovement, whil
 ███████║██║  ██║██║  ██║██║  ██║██║     ██║ ╚████║╚██████╔╝██║     ███████║███████╗██╔╝ ██╗███████╗╚██████╗
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝
 
-Version: 0.0.1
+Version: 0.0.2
 Author: Julio Ureña (PlainText)
 Twitter: @juliourena
 
@@ -39,3 +39,6 @@ Note: If the selected service has a non-system account this will be ignored.
 --help          - Print help information.
 ```
 
+#### Version 0.0.2
+- Fixed - Parsing payload, powershell commands wont execute if they have =.
+- Changed - Error handling.
