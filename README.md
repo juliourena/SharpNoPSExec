@@ -17,7 +17,7 @@ This tool is inspired on PSExec explanation from #OSEP for lateralmovement, whil
 ███████║██║  ██║██║  ██║██║  ██║██║     ██║ ╚████║╚██████╔╝██║     ███████║███████╗██╔╝ ██╗███████╗╚██████╗
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝
 
-Version: 0.0.2
+Version: 0.0.3
 Author: Julio Ureña (PlainText)
 Twitter: @juliourena
 
