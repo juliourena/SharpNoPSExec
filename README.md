@@ -38,6 +38,11 @@ Note: If the selected service has a non-system account this will be ignored.
 
 --help          - Print help information.
 ```
+#### Version 0.0.3
+- Added - Sanitization to the input.
+- Fixed - Payload it's working with Covenant in a non-interactive.
+- Changed - Exit function is a return, removed Enviroment.Exit(0).
+- Changed - Logic improvements.
 
 #### Version 0.0.2
 - Fixed - Parsing payload, powershell commands wont execute if they have =.
