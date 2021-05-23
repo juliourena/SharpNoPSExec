@@ -38,6 +38,9 @@ Note: If the selected service has a non-system account this will be ignored.
 
 --help          - Print help information.
 ```
+### Pass the hash Example
+https://user-images.githubusercontent.com/29603107/119263799-7d8c9180-bbae-11eb-9f3f-6f272bb8bcd6.mp4
+
 #### Version 0.0.3
 - Added - Sanitization to the input.
 - Fixed - Payload it's working with Covenant in a non-interactive.
